@@ -2,10 +2,10 @@ name: CI/CD for TelemetryProcessor
 'on':
   push:
     paths:
-      - Navora/TelemetryProcessor/**
+      - 'TelemetryProcessor/**'
   pull_request:
     paths:
-      - Navora/TelemetryProcessor/**
+      - 'TelemetryProcessor/**'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,15 +19,15 @@ jobs:
         dotnet-version: 8.0.x
         
     - name: Restore dependencies
-      run: dotnet restore Navora/TelemetryProcessor.sln
+      run: dotnet restore TelemetryProcessor/TelemetryProcessor.sln
       
     - name: Build
       run: >-
-        dotnet build Navora/TelemetryProcessor.sln --configuration Release
+        dotnet build TelemetryProcessor/TelemetryProcessor.sln --configuration Release
         --no-restore
         
     - name: Run tests
-      run: dotnet test Navora/TelemetryProcessor.sln --no-build --verbosity normal
+      run: dotnet test TelemetryProcessor/TelemetryProcessor.sln --no-build --verbosity normal
       
   publish:
     needs: build
