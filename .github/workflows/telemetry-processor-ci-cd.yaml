@@ -12,18 +12,23 @@ jobs:
   steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 8.0.x
+        
     - name: Restore dependencies
       run: dotnet restore Navora/TelemetryProcessor.sln
+      
     - name: Build
       run: >-
         dotnet build Navora/TelemetryProcessor.sln --configuration Release
         --no-restore
+        
     - name: Run tests
       run: dotnet test Navora/TelemetryProcessor.sln --no-build --verbosity normal
+      
   publish:
     needs: build
     if: github.ref == 'refs/heads/main'
@@ -31,23 +36,28 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.x
+          
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        
       - name: Build and tag Docker image
         run: >
           docker build -t telemetry-processor:latest .
 
           docker tag telemetry-processor:latest
           <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/telemetry-processor:latest
+          
       - name: Push Docker image to ECR
         run: >
           docker push
           <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/telemetry-processor:latest
+          
       - name: Deploy CloudFormation stack
         run: >
           aws cloudformation deploy --template-file cloudformation.yaml
