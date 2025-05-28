@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Outputs:
+  TelemetryDataTableName:
+    Description: Name of the DynamoDB table
+    Value:
+      Ref: TelemetryData
+  TelemetryProcessorFunctionArn:
+    Description: ARN of the Lambda function
+    Value:
+      Fn::GetAtt:
+      - TelemetryProcessor
+      - Arn
+  TelemetryProcessorQueueURL:
+    Description: URL of the SQS queue
+    Value:
+      Ref: TelemetryProcessorQueue
+Resources:
+  TelemetryData:
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: vehicleId
+        AttributeType: S
+      - AttributeName: timestamp
+        AttributeType: S
+      KeySchema:
+      - AttributeName: vehicleId
+        KeyType: HASH
+      - AttributeName: timestamp
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: TelemetryData
+    Type: AWS::DynamoDB::Table
+  TelemetryProcessor:
+    Properties:
+      Code:
+        ImageUri: <ECR_IMAGE_URI>
+      Environment:
+        Variables:
+          QUEUE_URL:
+            Ref: TelemetryProcessorQueue
+          TABLE_NAME:
+            Ref: TelemetryData
+      FunctionName: TelemetryProcessor
+      MemorySize: 128
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+        - TelemetryProcessorRole
+        - Arn
+      Timeout: 60
+    Type: AWS::Lambda::Function
+  TelemetryProcessorQueue:
+    Properties:
+      QueueName: TelemetryProcessorQueue
+    Type: AWS::SQS::Queue
+  TelemetryProcessorQueuePolicy:
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action: sqs:SendMessage
+          Effect: Allow
+          Principal: '*'
+          Resource:
+            Fn::GetAtt:
+            - TelemetryProcessorQueue
+            - Arn
+        Version: '2012-10-17'
+      Queues:
+      - Ref: TelemetryProcessorQueue
+    Type: AWS::SQS::QueuePolicy
+  
+  TelemetryProcessorEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+        BatchSize: 10
+        EventSourceArn: !GetAtt TelemetryProcessorQueue.Arn
+        FunctionName: !GetAtt TelemetryProcessor.Arn
+        Enabled: true
+        FunctionResponseTypes:
+        - ReportBatchItemFailures
+
+  TelemetryProcessorRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Effect: Allow
+            Resource: arn:aws:logs:*:*:*
+          - Action:
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+              - TelemetryProcessorQueue
+              - Arn
+          - Action:
+            - dynamodb:PutItem
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+              - TelemetryData
+              - Arn
+          Version: '2012-10-17'
+        PolicyName: TelemetryProcessorPolicy
+    Type: AWS::IAM::Role

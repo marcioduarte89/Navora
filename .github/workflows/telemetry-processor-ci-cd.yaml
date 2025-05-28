@@ -1,0 +1,62 @@
+name: CI/CD for TelemetryProcessor
+
+on:
+  push:
+    paths:
+      - 'Navora/TelemetryProcessor/**'
+  pull_request:
+    paths:
+      - 'Navora/TelemetryProcessor/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore Navora/TelemetryProcessor.sln
+
+    - name: Build
+      run: dotnet build Navora/TelemetryProcessor.sln --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test Navora/TelemetryProcessor.sln --no-build --verbosity normal
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Log in to Amazon ECR
+      id: ecr-login
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push Docker image
+      env:
+        ECR_REGISTRY: \${{ steps.ecr-login.outputs.registry }}
+        ECR_REPOSITORY: telemetry-processor
+        IMAGE_TAG: \${{ github.sha }}
+      run: |
+        docker build -t \${{ ECR_REGISTRY }}/\${{ ECR_REPOSITORY }}:\${{ IMAGE_TAG }} Navora/TelemetryProcessor/TelemetryProcessor
+        docker push \${{ ECR_REGISTRY }}/\${{ ECR_REPOSITORY }}:\${{ IMAGE_TAG }}
+
+    - name: Deploy CloudFormation stack
+      env:
+        STACK_NAME: TelemetryProcessorStack
+        TEMPLATE_FILE: cloudformation-template.yaml
+        IMAGE_URI: \${{ steps.ecr-login.outputs.registry }}/telemetry-processor:\${{ github.sha }}
+      run: |
+        aws cloudformation deploy --stack-name \${{ env.STACK_NAME }} --template-file \${{ env.TEMPLATE_FILE }} --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ImageUri=\${{ env.IMAGE_URI }}
+
