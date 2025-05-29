@@ -1,0 +1,14 @@
+name: Validate Milestone Format
+description: Validates the milestone for a microservice release
+inputs:
+  expected_service:
+    required: true
+    description: Name of the microservice (e.g., TelemetryProcessor)
+runs:
+  using: composite
+  steps:
+    - run: |
+        .github/actions/validate-milestone/validate.sh "${{ inputs.expected_service }}"
+      shell: bash
+      env:
+        PR_MILESTONE: ${{ env.PR_MILESTONE }}

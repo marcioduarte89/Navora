@@ -13,6 +13,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       
+    - name: Validate Milestone Format
+      uses: ./.github/actions/validate-milestone
+      with:
+        expected_service: TelemetryProcessor
+      env:
+        PR_MILESTONE: ${{ github.event.pull_request.milestone.title }}
+      
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
@@ -54,24 +61,22 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Get latest tag
-        uses: actions/github-script@main
         id: get-tag
-        with:
-          script: |
-            echo "Getting in"
-            const { data } = await github.request("GET /repos/{owner}/{repo}/pulls/{pr}", {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pr: context.payload.pull_request.number
-            });
-            if (data.milestone) {
-              echo "has milestone"
-              core.info(`This pull request has a milestone set: ${data.milestone.title}`);
-              NEW_TAG="TelemetryProcessor-${data.milestone.title}"
-            } else {
-              echo "will fail"
-              core.setFailed(`A maintainer needs to set the milestone for this pull request.`);
-            }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_JSON=$(gh pr list --search "${{ github.sha }}" --state merged --json number,title,milestone -L 1)
+          MILESTONE_TITLE=$(echo "$PR_JSON" | jq -r '.[0].milestone.title')
+
+          SERVICE_NAME=$(echo "$MILESTONE_TITLE" | cut -d'-' -f1)
+          VERSION=$(echo "$MILESTONE_TITLE" | cut -d'-' -f2)
+
+          if [[ "$SERVICE_NAME" != "TelemetryProcessor" ]]; then
+            echo "Milestone does not match expected service"
+            exit 1
+          fi
+
+          echo "new_tag=${SERVICE_NAME}-V${VERSION}" >> $GITHUB_OUTPUT
     
       - name: Create new tag
         env:
