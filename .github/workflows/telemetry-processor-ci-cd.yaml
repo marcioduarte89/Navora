@@ -58,10 +58,13 @@ jobs:
         run: |
           TAG=$(git tag --list 'TelemetryProcessor-v*' --sort=-v:refname | head -n 1)
           echo "Latest tag: $TAG"
-          VERSION=${TAG##*-}
-          echo "Latest tag: $VERSION"
-          IFS='.' read -r major minor patch <<< "$VERSION"
-          NEW_TAG=\"TelemetryProcessor-v$major.$minor.$((patch+1))\"
+          if [ -z "$TAG" ]; then
+            NEW_TAG="TelemetryProcessor-v1.0.0"
+          else
+            VERSION=${TAG##*-}
+            IFS='.' read -r major minor patch <<< "$VERSION"
+            NEW_TAG="TelemetryProcessor-v$major.$minor.$((patch+1))"
+          fi
           echo \"new_tag=$NEW_TAG\" >> $GITHUB_OUTPUT
     
       - name: Create new tag
