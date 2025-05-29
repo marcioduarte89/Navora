@@ -81,8 +81,6 @@ jobs:
           body: |
            🚀 Release for TelemetryProcessor
            - Docker image: `${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.get-tag.outputs.new_tag }}`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build, Tag, and Push the Image to Amazon ECR
         id: build-image
