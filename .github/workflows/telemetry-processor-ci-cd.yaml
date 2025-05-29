@@ -53,12 +53,41 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
         
+      - name: Get latest tag
+        id: get-tag
+        run: |
+          TAG=$(git tag --list 'TelemetryProcessor-v*' --sort=-v:refname | head -n 1)
+          echo "Latest tag: $TAG"
+          VERSION=${TAG##*-}
+          echo "Latest tag: $VERSION"
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          NEW_TAG=\"TelemetryProcessor-v$major.$minor.$((patch+1))\"
+          echo \"new_tag=$NEW_TAG\" >> $GITHUB_OUTPUT
+    
+      - name: Create new tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag ${{ steps.get-tag.outputs.new_tag }}
+          git push origin ${{ steps.get-tag.outputs.new_tag }}
+    
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get-tag.outputs.new_tag }}
+          name: Release ${{ steps.get-tag.outputs.new_tag }}
+          body: |
+           🚀 Release for TelemetryProcessor
+           - Docker image: `${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.get-tag.outputs.new_tag }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build, Tag, and Push the Image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: navora
-          IMAGE_TAG: latest
+          IMAGE_TAG: telemetry-processor-${{ steps.get-tag.outputs.new_tag }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG TelemetryProcessor/TelemetryProcessor
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
