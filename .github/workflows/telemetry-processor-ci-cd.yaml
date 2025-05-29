@@ -42,26 +42,23 @@ jobs:
         with:
           dotnet-version: 6.0.x
           
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_SECRET_REGION }}
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
         
-      - name: Build and tag Docker image
-        run: >
-          docker build -t telemetry-processor:latest .
-
-          docker tag telemetry-processor:latest
-          <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/telemetry-processor:latest
-          
-      - name: Push Docker image to ECR
-        run: >
-          docker push
-          <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/telemetry-processor:latest
-          
-      - name: Deploy CloudFormation stack
-        run: >
-          aws cloudformation deploy --template-file cloudformation.yaml
-          --stack-name TelemetryProcessorStack --capabilities
-          CAPABILITY_NAMED_IAM --parameter-overrides
-          ImageUri=<AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/telemetry-processor:latest
-          
+      - name: Build, Tag, and Push the Image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: navora
+          IMAGE_TAG: ${{ steps.increment-git-tag.outputs.git-tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG TelemetryProcessor/TelemetryProcessor
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
