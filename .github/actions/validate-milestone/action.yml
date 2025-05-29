@@ -9,6 +9,7 @@ runs:
   steps:
     - name: Make Validate.sh executable
       run: chmod +x .github/actions/validate-milestone/validate.sh
+      shell: bash
     
     - name: Execute validate script
       run: |
