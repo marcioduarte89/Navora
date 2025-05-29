@@ -7,7 +7,11 @@ inputs:
 runs:
   using: composite
   steps:
-    - run: |
+    - name: Make Validate.sh executable
+      run: chmod +x .github/actions/validate-milestone/validate.sh
+    
+    - name: Execute validate script
+      run: |
         .github/actions/validate-milestone/validate.sh "${{ inputs.expected_service }}"
       shell: bash
       env:
