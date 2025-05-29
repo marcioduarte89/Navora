@@ -54,20 +54,24 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Get latest tag
+        uses: actions/github-script@main
         id: get-tag
-        run: |
-          TAG=$(git for-each-ref --sort=-creatordate --format '%(refname:short)' refs/tags | grep '^TelemetryProcessor-v' | head -n 1)
-          echo "Latest tag: $TAG"
-          if [ -z "$TAG" ]; then
-            NEW_TAG="TelemetryProcessor-v1.0.0"
-            echo "Latest tag: $NEW_TAG"
-          else
-            VERSION=${TAG##*-}
-            IFS='.' read -r major minor patch <<< "$VERSION"
-            NEW_TAG="TelemetryProcessor-v$major.$minor.$((patch+1))"
-            echo "Latest tag: $NEW_TAG"
-          fi
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+        with:
+          script: |
+            echo "Getting in"
+            const { data } = await github.request("GET /repos/{owner}/{repo}/pulls/{pr}", {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pr: context.payload.pull_request.number
+            });
+            if (data.milestone) {
+              echo "has milestone"
+              core.info(`This pull request has a milestone set: ${data.milestone.title}`);
+              NEW_TAG="TelemetryProcessor-${data.milestone.title}"
+            } else {
+              echo "will fail"
+              core.setFailed(`A maintainer needs to set the milestone for this pull request.`);
+            }
     
       - name: Create new tag
         env:
