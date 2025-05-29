@@ -21,7 +21,7 @@ public class Functions
     };
 
     /// <summary>
-    /// A Lambda function to respond to HTTP Get methods from API Gateway
+    /// A Lambda function to respond to HTTP Get methods from API Gateway 
     /// </summary>
     /// <remarks>
     /// This uses the <see href="https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Annotations/README.md">Lambda Annotations</see> 
