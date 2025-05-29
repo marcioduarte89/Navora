@@ -60,12 +60,14 @@ jobs:
           echo "Latest tag: $TAG"
           if [ -z "$TAG" ]; then
             NEW_TAG="TelemetryProcessor-v1.0.0"
+            echo "Latest tag: $NEW_TAG"
           else
             VERSION=${TAG##*-}
             IFS='.' read -r major minor patch <<< "$VERSION"
             NEW_TAG="TelemetryProcessor-v$major.$minor.$((patch+1))"
+            echo "Latest tag: $NEW_TAG"
           fi
-          echo \"new_tag=$NEW_TAG\" >> $GITHUB_OUTPUT
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
     
       - name: Create new tag
         env:
