@@ -4,6 +4,8 @@ name: CI/CD for TelemetryProcessor
     paths:
       - 'TelemetryProcessor/**'
   pull_request:
+    branches:
+      - main
     paths:
       - 'TelemetryProcessor/**'
 jobs:
@@ -14,6 +16,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Validate Milestone Format
+      if: github.event_name == 'pull_request'
       uses: ./.github/actions/validate-milestone
       with:
         expected_service: TelemetryProcessor
