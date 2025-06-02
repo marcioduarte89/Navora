@@ -14,6 +14,10 @@ Outputs:
     Description: URL of the SQS queue
     Value:
       Ref: TelemetryProcessorQueue
+Parameters:
+  ImageUri:
+    Description: URI of the ECR image for the Lambda function
+    Type: String
 Resources:
   TelemetryData:
     Properties:
@@ -35,7 +39,8 @@ Resources:
   TelemetryProcessor:
     Properties:
       Code:
-        ImageUri: <ECR_IMAGE_URI>
+        ImageUri:
+          Ref: ImageUri
       Environment:
         Variables:
           QUEUE_URL:
@@ -49,8 +54,23 @@ Resources:
         Fn::GetAtt:
         - TelemetryProcessorRole
         - Arn
-      Timeout: 60
+      Timeout: 30
     Type: AWS::Lambda::Function
+  TelemetryProcessorEventSourceMapping:
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn:
+        Fn::GetAtt:
+        - TelemetryProcessorQueue
+        - Arn
+      FunctionName:
+        Fn::GetAtt:
+        - TelemetryProcessor
+        - Arn
+      FunctionResponseTypes:
+      - ReportBatchItemFailures
+    Type: AWS::Lambda::EventSourceMapping
   TelemetryProcessorQueue:
     Properties:
       QueueName: TelemetryProcessorQueue
@@ -70,17 +90,6 @@ Resources:
       Queues:
       - Ref: TelemetryProcessorQueue
     Type: AWS::SQS::QueuePolicy
-  
-  TelemetryProcessorEventSourceMapping:
-    Type: AWS::Lambda::EventSourceMapping
-    Properties:
-        BatchSize: 10
-        EventSourceArn: !GetAtt TelemetryProcessorQueue.Arn
-        FunctionName: !GetAtt TelemetryProcessor.Arn
-        Enabled: true
-        FunctionResponseTypes:
-        - ReportBatchItemFailures
-
   TelemetryProcessorRole:
     Properties:
       AssumeRolePolicyDocument:
