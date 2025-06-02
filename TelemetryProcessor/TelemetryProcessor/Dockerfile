@@ -1,3 +1,9 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+
+# Copy csproj and restore
+COPY TelemetryProcessor/TelemetryProcessor.csproj ./TelemetryProcessor/
 RUN dotnet restore ./TelemetryProcessor/TelemetryProcessor.csproj
 
 # Copy the rest and publish
