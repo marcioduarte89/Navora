@@ -11,7 +11,7 @@ COPY . .
 RUN dotnet publish -c Release -o /app/publish
 
 # Runtime stage
-FROM public.ecr.aws/lambda/dotnet:6
+FROM public.ecr.aws/lambda/dotnet:8
 WORKDIR /var/task
 COPY --from=build /app/publish .
 
