@@ -106,5 +106,5 @@ jobs:
           ECR_REPOSITORY: navora
           IMAGE_TAG: ${{ steps.get-tag.outputs.new_tag }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG TelemetryProcessor/TelemetryProcessor
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f TelemetryProcessor/TelemetryProcessor/Dockerfile .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
