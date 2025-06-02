@@ -79,7 +79,7 @@ jobs:
             exit 1
           fi
 
-          echo "new_tag=${SERVICE_NAME}-V${VERSION}" >> $GITHUB_OUTPUT
+          echo "new_tag=${SERVICE_NAME}-${VERSION}" >> $GITHUB_OUTPUT
     
       - name: Create new tag
         env:
