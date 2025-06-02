@@ -108,3 +108,7 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG TelemetryProcessor/TelemetryProcessor
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+      - name: Deploy CloudFormation stack
+        run: >
+          aws cloudformation deploy --template-file cloudformation.yaml --stack-name TelemetryProcessorStack --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ImageUri=${{ secrets.AWS_ACCESS_KEY_ID }}.dkr.ecr.${{ secrets.AWS_SECRET_REGION}}.amazonaws.com/navora:TelemetryProcessor-${{ steps.get-tag.outputs.new_tag }}

@@ -15,4 +15,4 @@ FROM public.ecr.aws/lambda/dotnet:8
 WORKDIR /var/task
 COPY --from=build /app/publish .
 
-CMD ["TelemetryProcessor::TelemetryProcessor.Functions::FunctionHandler"]
+CMD ["TelemetryProcessor::TelemetryProcessor.Functions_FunctionHandler_Generated::FunctionHandler"]
