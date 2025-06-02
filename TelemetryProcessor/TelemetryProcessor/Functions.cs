@@ -36,7 +36,7 @@ public class Functions
     /// <param name="context">Information about the invocation, function, and execution environment</param>
     /// <returns>The response as an implicit <see cref="APIGatewayProxyResponse"/></returns>
     [LambdaFunction]
-    public async Task Get([FromServices] IAmazonDynamoDB dynamoDbClient, SQSEvent evnt, ILambdaContext context)
+    public async Task FunctionHandler([FromServices] IAmazonDynamoDB dynamoDbClient, SQSEvent evnt, ILambdaContext context)
     {
         List<BatchItemFailure> batchItemFailures = [];
 
