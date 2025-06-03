@@ -1,11 +1,14 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Annotations;
-using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
+using System.Net;
 using System.Text.Json;
 using TelemetryProcessor.Models;
+using TelemetryProcessor.Services;
 using static Amazon.Lambda.SQSEvents.SQSBatchResponse;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -15,28 +18,24 @@ namespace TelemetryProcessor;
 
 public class Functions
 {
+    private readonly ITopicsService _topicsService;
+    private readonly IAmazonSimpleNotificationService _snsService;
     private JsonSerializerOptions OPTIONS = new JsonSerializerOptions()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    /// <summary>
-    /// A Lambda function to respond to HTTP Get methods from API Gateway 
-    /// </summary>
-    /// <remarks>
-    /// This uses the <see href="https://github.com/aws/aws-lambda-dotnet/blob/master/Libraries/src/Amazon.Lambda.Annotations/README.md">Lambda Annotations</see> 
-    /// programming model to bridge the gap between the Lambda programming model and a more idiomatic .NET model.
-    /// 
-    /// This automatically handles reading parameters from an APIGatewayProxyRequest
-    /// as well as syncing the function definitions to serverless.template each time you build.
-    /// 
-    /// If you do not wish to use this model and need to manipulate the API Gateway 
-    /// objects directly, see the accompanying Readme.md for instructions.
-    /// </remarks>
-    /// <param name="context">Information about the invocation, function, and execution environment</param>
-    /// <returns>The response as an implicit <see cref="APIGatewayProxyResponse"/></returns>
+    public Functions(ITopicsService topicsService, IAmazonSimpleNotificationService snsService)
+    {
+        _topicsService = topicsService;
+        _snsService = snsService;
+    }
+
     [LambdaFunction]
-    public async Task FunctionHandler([FromServices] IAmazonDynamoDB dynamoDbClient, SQSEvent evnt, ILambdaContext context)
+    public async Task FunctionHandler(
+        [FromServices] IAmazonDynamoDB dynamoDbClient,
+        SQSEvent evnt,
+        ILambdaContext context)
     {
         List<BatchItemFailure> batchItemFailures = [];
 
@@ -54,7 +53,10 @@ public class Functions
         }
     }
 
-    private async Task ProcessMessageAsync(IAmazonDynamoDB dynamoDbClient, SQSEvent.SQSMessage message, ILambdaContext context)
+    private async Task ProcessMessageAsync(
+        IAmazonDynamoDB dynamoDbClient,
+        SQSEvent.SQSMessage message,
+        ILambdaContext context)
     {
         var payload = JsonSerializer.Deserialize<VehicleTelemetryData>(message.Body, OPTIONS);
 
@@ -79,5 +81,25 @@ public class Functions
         };
 
         var response = await dynamoDbClient.PutItemAsync(request);
+
+        if (response.HttpStatusCode == HttpStatusCode.OK && payload.HasAlert())
+        {
+            var topicArn = await _topicsService.GetTopicArnByName("AlertsTopic");
+            
+            if(topicArn is null)
+            {
+                // handle it here (move message to error queue, etc)
+            }
+
+            var publishRequest = new PublishRequest
+            {
+                TopicArn = topicArn,
+                Message = message.Body,
+            };
+
+            var snsResponse = await _snsService.PublishAsync(publishRequest);
+
+            Console.WriteLine($"Successfully published message ID: {snsResponse.MessageId}");
+        }
     }
 }

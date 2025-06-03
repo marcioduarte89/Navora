@@ -19,5 +19,14 @@ namespace TelemetryProcessor.Models
         public int? CargoTemperature { get; init; }
 
         public bool IgnitionStatus { get; init; }
+
+        /// <summary>
+        /// Having some dummy value ranges here
+        /// </summary>
+        /// <returns></returns>
+        public bool HasAlert()
+        {
+            return Speed > 90 || FuelLevel < 10 || EngineTemperature > 90 || CargoTemperature > 50;
+        }
     }
 }
