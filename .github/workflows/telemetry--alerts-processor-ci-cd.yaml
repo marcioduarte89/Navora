@@ -1,0 +1,114 @@
+name: CI/CD for TelemetryAlertsProcessor
+'on':
+  push:
+    paths:
+      - 'TelemetryAlertsProcessor/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'TelemetryAlertsProcessor/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate Milestone Format
+      if: github.event_name == 'pull_request'
+      uses: ./.github/actions/validate-milestone
+      with:
+        expected_service: TelemetryAlertsProcessor
+      env:
+        PR_MILESTONE: ${{ github.event.pull_request.milestone.title }}
+      
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore TelemetryAlertsProcessor/TelemetryAlertsProcessor.sln
+      
+    - name: Build
+      run: >-
+        dotnet build TelemetryAlertsProcessor/TelemetryAlertsProcessor.sln --configuration Release
+        --no-restore
+        
+    - name: Run tests
+      run: dotnet test TelemetryAlertsProcessor/TelemetryAlertsProcessor.sln --configuration Release --no-build --verbosity normal
+      
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_SECRET_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Get latest tag
+        id: get-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_JSON=$(gh pr list --search "${{ github.sha }}" --state merged --json number,title,milestone -L 1)
+          MILESTONE_TITLE=$(echo "$PR_JSON" | jq -r '.[0].milestone.title')
+
+          SERVICE_NAME=$(echo "$MILESTONE_TITLE" | cut -d'-' -f1)
+          VERSION=$(echo "$MILESTONE_TITLE" | cut -d'-' -f2)
+
+          if [[ "$SERVICE_NAME" != "TelemetryAlertsProcessor" ]]; then
+            echo "Milestone does not match expected service"
+            exit 1
+          fi
+
+          echo "new_tag=${SERVICE_NAME}-${VERSION}" >> $GITHUB_OUTPUT
+    
+      - name: Create new tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.get-tag.outputs.new_tag }}
+          git push origin ${{ steps.get-tag.outputs.new_tag }}
+    
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get-tag.outputs.new_tag }}
+          name: Release ${{ steps.get-tag.outputs.new_tag }}
+          body: |
+           🚀 Release for TelemetryAlertsProcessor
+           - Docker image: `${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.get-tag.outputs.new_tag }}`
+
+      - name: Build, Tag, and Push the Image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: navora
+          IMAGE_TAG: ${{ steps.get-tag.outputs.new_tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG TelemetryAlertsProcessor/TelemetryAlertsProcessor
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+      - name: Deploy CloudFormation stack
+        run: >
+          aws cloudformation deploy --template-file TelemetryAlertsProcessor/TelemetryAlertsProcessor/cloudformation-template.yaml --stack-name TelemetryAlertsProcessorStack --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ImageUri=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_SECRET_REGION}}.amazonaws.com/navora:${{ steps.get-tag.outputs.new_tag }}

@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Architecture for processing telemetry alerts via SNS and Lambda using ECR
+
+Resources:
+
+  TelemetryAlertsData:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TelemetryAlertsData
+      AttributeDefinitions:
+        - AttributeName: vehicleId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: vehicleId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  AlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AlertsTopic
+
+  TelemetryAlertsProcessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: TelemetryAlertsProcessorRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: TelemetryAlertsProcessorPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !GetAtt TelemetryAlertsData.Arn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  TelemetryAlertsProcessor:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: TelemetryAlertsProcessor
+      Role: !GetAtt TelemetryAlertsProcessorRole.Arn
+      PackageType: Image
+      Code:
+        ImageUri:
+          Ref: ImageUri
+      Timeout: 30
+
+  AlertsTopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertsTopic
+      Protocol: lambda
+      Endpoint: !GetAtt TelemetryAlertsProcessor.Arn
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref TelemetryAlertsProcessor
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref AlertsTopic
+
+  TelemetryProcessorPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TelemetryProcessorSNSPublishPolicy
+      Roles:
+        - TelemetryProcessorRole  # Assumes this role exists
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sns:Publish
+            Resource: !Ref AlertsTopic
