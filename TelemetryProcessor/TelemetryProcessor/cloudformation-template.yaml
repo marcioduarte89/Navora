@@ -92,7 +92,7 @@ Resources:
     Type: AWS::SQS::QueuePolicy
   TelemetryProcessorRole:
     Properties:
-      RoleName: TelemetryProcessorRole  
+      RoleName: TelemetryProcessorRole-123 
       AssumeRolePolicyDocument:
         Statement:
         - Action: sts:AssumeRole
