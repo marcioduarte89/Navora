@@ -82,15 +82,6 @@ public class Functions
 
         var response = await dynamoDbClient.PutItemAsync(request);
 
-        Console.WriteLine($"Pushing item to dynamodb status: {response.HttpStatusCode}");
-        Console.WriteLine($"Payload: {message.Body}");
-        Console.WriteLine($"Has alert: {payload.HasAlert()}");
-
-        Console.WriteLine($"Is condition true: {response.HttpStatusCode == HttpStatusCode.OK && payload.HasAlert()}");
-
-        var topicArnT = await _topicsService.GetTopicArnByName("AlertsTopic");
-        Console.WriteLine($"Topic name: {topicArnT}");
-
         if (response.HttpStatusCode == HttpStatusCode.OK && payload.HasAlert())
         {
             var topicArn = await _topicsService.GetTopicArnByName("AlertsTopic");
@@ -100,6 +91,8 @@ public class Functions
             if (topicArn is null)
             {
                 // handle it here (move message to error queue, etc)
+                Console.WriteLine("returning as no topic has been found");
+                return;
             }
 
             var publishRequest = new PublishRequest

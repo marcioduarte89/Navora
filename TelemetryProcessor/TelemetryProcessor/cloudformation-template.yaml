@@ -125,6 +125,10 @@ Resources:
               Fn::GetAtt:
               - TelemetryData
               - Arn
+          - Action:
+            - sns:ListTopics
+            Effect: Allow
+            Resource: "*"
           Version: '2012-10-17'
         PolicyName: TelemetryProcessorPolicy
     Type: AWS::IAM::Role
