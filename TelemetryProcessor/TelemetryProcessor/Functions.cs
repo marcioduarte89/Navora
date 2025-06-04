@@ -82,11 +82,16 @@ public class Functions
 
         var response = await dynamoDbClient.PutItemAsync(request);
 
+        Console.WriteLine($"Pushing item to dynamodb status: {response.HttpStatusCode}");
+        Console.WriteLine($"Has alert: {payload.HasAlert()}");
+
         if (response.HttpStatusCode == HttpStatusCode.OK && payload.HasAlert())
         {
             var topicArn = await _topicsService.GetTopicArnByName("AlertsTopic");
-            
-            if(topicArn is null)
+
+            Console.WriteLine($"Topic: {topicArn}");
+
+            if (topicArn is null)
             {
                 // handle it here (move message to error queue, etc)
             }
