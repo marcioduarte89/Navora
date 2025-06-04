@@ -1,5 +1,11 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Architecture for processing telemetry alerts via SNS and Lambda using ECR
+
+Parameters:
+  ImageUri:
+    Description: URI of the ECR image for the Lambda function
+    Type: String
 
 Resources:
 
@@ -58,8 +64,7 @@ Resources:
       Role: !GetAtt TelemetryAlertsProcessorRole.Arn
       PackageType: Image
       Code:
-        ImageUri:
-          Ref: ImageUri
+        ImageUri: !Ref ImageUri
       Timeout: 30
 
   AlertsTopicSubscription:
@@ -82,7 +87,7 @@ Resources:
     Properties:
       PolicyName: TelemetryProcessorSNSPublishPolicy
       Roles:
-        - TelemetryProcessorRole  # Assumes this role exists
+        - TelemetryProcessorRole-123   # Assumes this role exists
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
