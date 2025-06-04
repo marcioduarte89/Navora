@@ -18,22 +18,28 @@ namespace TelemetryProcessor.Services
 
             do
             {
-                var response = await _snsService.ListTopicsAsync(new ListTopicsRequest
+                try
                 {
-                    NextToken = nextToken
-                });
-
-                foreach (var topic in response.Topics)
-                {
-                    Console.WriteLine($"Listing topic with topic arn {topic.TopicArn}");
-                    if (topic.TopicArn.EndsWith($":{topicName}"))
+                    var response = await _snsService.ListTopicsAsync(new ListTopicsRequest
                     {
-                        Console.WriteLine($"Found topic");
-                        return topic.TopicArn;
-                    }
-                }
+                        NextToken = nextToken
+                    });
 
-                nextToken = response.NextToken;
+                    foreach (var topic in response.Topics)
+                    {
+                        Console.WriteLine($"Listing topic with topic arn {topic.TopicArn}");
+                        if (topic.TopicArn.EndsWith($":{topicName}"))
+                        {
+                            Console.WriteLine($"Found topic");
+                            return topic.TopicArn;
+                        }
+                    }
+
+                    nextToken = response.NextToken;
+                }catch(Exception ex)
+                {
+                    Console.WriteLine($"Exception happened {ex.Message} with stack: {ex.StackTrace} with inner exception: {ex.InnerException}");
+                }
 
             } while (nextToken != null);
 
