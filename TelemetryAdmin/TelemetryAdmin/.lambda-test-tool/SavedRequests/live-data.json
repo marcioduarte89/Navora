@@ -1,0 +1,27 @@
+{
+    "version": "2.0",
+    "routeKey": "GET /vehicle-telemetry/live",
+    "rawPath": "/vehicle-telemetry/live",
+    "rawQueryString": "x=1&y=2",
+    "headers": {
+        "Header1": "value1",
+        "Header2": "value2"
+    },
+    "queryStringParameters": {
+        "x": "1",
+        "y": "2"
+    },
+    "requestContext": {
+        "http": {
+            "method": "GET",
+            "path": "/vehicle-telemetry/live",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "127.0.0.1",
+            "userAgent": "test-agent"
+        }
+    },
+    "pathParameters": {
+        "vehicleId": "1"
+    },
+    "isBase64Encoded": false
+}

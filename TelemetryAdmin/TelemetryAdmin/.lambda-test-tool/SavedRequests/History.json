@@ -1,0 +1,19 @@
+{
+    "version": "2.0",
+    "routeKey": "GET /vehicle-telemetry/1/history",
+    "rawPath": "/vehicle-telemetry/1/history",
+    "rawQueryString": "vehicleId=1",
+    "requestContext": {
+        "http": {
+            "method": "GET",
+            "path": "/vehicle-telemetry/1/history",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "127.0.0.1",
+            "userAgent": "test-agent"
+        }
+    },
+    "pathParameters": {
+        "vehicleId": "1"
+    },
+    "isBase64Encoded": false
+}
