@@ -1,8 +1,8 @@
 ﻿using Amazon.DynamoDBv2.DataModel;
 namespace TelemetryAdmin.Models
 {
-    [DynamoDBTable("TelemetryData")]
-    public class VehicleTelemetryData
+    [DynamoDBTable("TelemetryAlertsData")]
+    public class VehicleTelemetryAlertsData
     {
         [DynamoDBHashKey(AttributeName = "vehicleId")]
         public long VehicleId { get; init; }

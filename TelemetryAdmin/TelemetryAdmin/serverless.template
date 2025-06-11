@@ -3,7 +3,7 @@
   "Transform": "AWS::Serverless-2016-10-31",
   "Description": "This template is partially managed by Amazon.Lambda.Annotations (v1.7.0.0).",
   "Resources": {
-    "TelemetryAdminFunctionGetVehiclesTelemetryLiveDataGenerated": {
+    "TelemetryAdminFunctionGetVehiclesLiveTelemetryGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -26,7 +26,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesTelemetryLiveData_Generated::GetVehiclesTelemetryLiveData",
+        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesLiveTelemetry_Generated::GetVehiclesLiveTelemetry",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -38,7 +38,7 @@
         }
       }
     },
-    "TelemetryAdminFunctionGetVehicleTelemetryDataHistoryGenerated": {
+    "TelemetryAdminFunctionGetVehicleTelemetryHistoryGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -61,7 +61,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehicleTelemetryDataHistory_Generated::GetVehicleTelemetryDataHistory",
+        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehicleTelemetryHistory_Generated::GetVehicleTelemetryHistory",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -73,7 +73,7 @@
         }
       }
     },
-    "TelemetryAdminFunctionGetVehiclesTelemetryAlertDataGenerated": {
+    "TelemetryAdminFunctionGetVehiclesAlertTelemetryGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -96,7 +96,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesTelemetryAlertData_Generated::GetVehiclesTelemetryAlertData",
+        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesAlertTelemetry_Generated::GetVehiclesAlertTelemetry",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
@@ -108,7 +108,7 @@
         }
       }
     },
-    "TelemetryAdminFunctionGetVehicleTelemetryAlertDataGenerated": {
+    "TelemetryAdminFunctionGetVehicleAlertTelemetryGenerated": {
       "Type": "AWS::Serverless::Function",
       "Metadata": {
         "Tool": "Amazon.Lambda.Annotations",
@@ -131,7 +131,7 @@
           "AWSLambdaBasicExecutionRole"
         ],
         "PackageType": "Zip",
-        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehicleTelemetryAlertData_Generated::GetVehicleTelemetryAlertData",
+        "Handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehicleAlertTelemetry_Generated::GetVehicleAlertTelemetry",
         "Events": {
           "RootGet": {
             "Type": "HttpApi",
