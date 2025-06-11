@@ -48,21 +48,21 @@ Resources:
     Properties:
       ThingName: VehicleDevice
 
-  VehiclePolicy2:
-    Type: AWS::IoT::Policy
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - iot:Connect
-              - iot:Publish
-              - iot:Subscribe
-              - iot:Receive
-            Resource: "*"
+  # VehiclePolicy2:
+    # Type: AWS::IoT::Policy
+    # Properties:
+      # PolicyDocument:
+        # Version: '2012-10-17'
+        # Statement:
+          # - Effect: Allow
+            # Action:
+              # - iot:Connect
+              # - iot:Publish
+              # - iot:Subscribe
+              # - iot:Receive
+            # Resource: "*"
 
-Outputs:
-  GeneratedPolicyName:
-    Description: The name of the generated IoT policy
-    Value: !Ref VehiclePolicy2
+# Outputs:
+  # GeneratedPolicyName:
+    # Description: The name of the generated IoT policy
+    # Value: !Ref VehiclePolicy2
