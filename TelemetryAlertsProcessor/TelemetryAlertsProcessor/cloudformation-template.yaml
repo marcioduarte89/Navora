@@ -15,7 +15,7 @@ Resources:
       TableName: TelemetryAlertsData
       AttributeDefinitions:
         - AttributeName: vehicleId
-          AttributeType: S
+          AttributeType: N
         - AttributeName: timestamp
           AttributeType: S
       KeySchema:

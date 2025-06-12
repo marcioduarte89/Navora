@@ -12,6 +12,6 @@
   "function-runtime": "dotnet8",
   "function-memory-size": 512,
   "function-timeout": 30,
-  "function-handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesTelemetryLiveData_Generated::GetVehiclesTelemetryLiveData",
+  "function-handler": "TelemetryAdmin::TelemetryAdmin.Function_GetVehicleTelemetryDataHistory_Generated::GetVehicleTelemetryDataHistory",
   "environment-variables": "POWERTOOLS_SERVICE_NAME=PowertoolsFunction;POWERTOOLS_LOG_LEVEL=Info;POWERTOOLS_LOGGER_CASE=PascalCase;POWERTOOLS_TRACER_CAPTURE_RESPONSE=true;POWERTOOLS_TRACER_CAPTURE_ERROR=true;POWERTOOLS_METRICS_NAMESPACE=powertools_function"
 }

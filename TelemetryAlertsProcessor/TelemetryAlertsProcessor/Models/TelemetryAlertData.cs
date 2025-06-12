@@ -6,7 +6,7 @@ namespace AlertsProcessor.Models
     {
         public long VehicleId { get; init; }
 
-        public DateTime TimeStamp { get; init; }
+        public DateTime Timestamp { get; init; }
 
         public GeoCoordinate Location { get; init; } = default!;
 

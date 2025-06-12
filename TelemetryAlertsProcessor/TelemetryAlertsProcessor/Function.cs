@@ -43,8 +43,8 @@ public class Function
 
         var item = new Dictionary<string, AttributeValue>
         {
-            { "vehicleId", new AttributeValue { S = payload.VehicleId.ToString() } },
-            { "timestamp", new AttributeValue { S = payload.TimeStamp.ToString("o") } },
+            { "vehicleId", new AttributeValue { N = payload.VehicleId.ToString() } },
+            { "timestamp", new AttributeValue { S = payload.Timestamp.ToString("o") } },
             { "location", new AttributeValue { S = payload.Location.ToString() } },
             { "speed", new AttributeValue { S = payload.Speed.ToString() } },
             { "fuelLevel", new AttributeValue { S = payload.FuelLevel.ToString() } },
