@@ -36,8 +36,7 @@ public class Function
     [HttpApi(LambdaHttpMethod.Get, "/vehicle-telemetry/{vehicleId}/history")]
     public async Task<List<VehicleTelemetryData>> GetVehicleTelemetryHistory(long vehicleId)
     {
-        var vehicleTelemetryData = await Query<VehicleTelemetryData>(vehicleId);
-        return vehicleTelemetryData;
+        return await Query<VehicleTelemetryData>(vehicleId);
     }
 
     [LambdaFunction]
