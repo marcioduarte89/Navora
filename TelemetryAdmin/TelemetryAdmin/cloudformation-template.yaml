@@ -1,0 +1,317 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: HTTP API Gateway with 4 Lambda functions using ECR image and DynamoDB
+  access
+Parameters:
+  ImageUri:
+    Description: URI of the ECR image for the Lambda function
+    Type: String
+  CognitoDomain:
+    Type: String
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
+    Description: Enter a string. Must be alpha numeric 3-63 in length.
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: DynamoDBAccessPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:Scan
+            - dynamodb:Query
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:DescribeTable
+            Resource:
+            - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TelemetryData
+            - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TelemetryAlertsData
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: VehicleTelemetryHttpApi
+      ProtocolType: HTTP
+  GetVehiclesLiveTelemetry:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GetVehiclesLiveTelemetry
+      PackageType: Image
+      Timeout: 30
+      Code:
+        ImageUri:
+          Ref: ImageUri
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      ImageConfig:
+        Command:
+        - TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesLiveTelemetry_Generated::GetVehiclesLiveTelemetry
+  GetVehiclesLiveTelemetryIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::GetAtt:
+        - GetVehiclesLiveTelemetry
+        - Arn
+      PayloadFormatVersion: '2.0'
+  GetVehiclesLiveTelemetryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      RouteKey: GET /vehicle-telemetry/live
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target:
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehiclesLiveTelemetryIntegration
+  GetVehiclesLiveTelemetryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: GetVehiclesLiveTelemetry
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/vehicle-telemetry/live
+  GetVehicleTelemetryHistory:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GetVehicleTelemetryHistory
+      PackageType: Image
+      Timeout: 30
+      Code:
+        ImageUri:
+          Ref: ImageUri
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      ImageConfig:
+        Command:
+        - TelemetryAdmin::TelemetryAdmin.Function_GetVehicleTelemetryHistory_Generated::GetVehicleTelemetryHistory
+  GetVehicleTelemetryHistoryIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::GetAtt:
+        - GetVehicleTelemetryHistory
+        - Arn
+      PayloadFormatVersion: '2.0'
+  GetVehicleTelemetryHistoryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      RouteKey: GET /vehicle-telemetry/{vehicleId}/history
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target:
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehicleTelemetryHistoryIntegration
+  GetVehicleTelemetryHistoryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: GetVehicleTelemetryHistory
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/vehicle-telemetry/{vehicleId}/history
+  GetVehiclesAlertTelemetry:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GetVehiclesAlertTelemetry
+      PackageType: Image
+      Timeout: 30
+      Code:
+        ImageUri:
+          Ref: ImageUri
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      ImageConfig:
+        Command:
+        - TelemetryAdmin::TelemetryAdmin.Function_GetVehiclesAlertTelemetry_Generated::GetVehiclesAlertTelemetry
+  GetVehiclesAlertTelemetryIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::GetAtt:
+        - GetVehiclesAlertTelemetry
+        - Arn
+      PayloadFormatVersion: '2.0'
+  GetVehiclesAlertTelemetryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      RouteKey: GET /vehicle-telemetry/alerts
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target:
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehiclesAlertTelemetryIntegration
+  GetVehiclesAlertTelemetryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: GetVehiclesAlertTelemetry
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/vehicle-telemetry/alerts
+  GetVehicleAlertTelemetry:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GetVehicleAlertTelemetry
+      PackageType: Image
+      Timeout: 30
+      Code:
+        ImageUri:
+          Ref: ImageUri
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      ImageConfig:
+        Command:
+        - TelemetryAdmin::TelemetryAdmin.Function_GetVehicleAlertTelemetry_Generated::GetVehicleAlertTelemetry
+  GetVehicleAlertTelemetryIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::GetAtt:
+        - GetVehicleAlertTelemetry
+        - Arn
+      PayloadFormatVersion: '2.0'
+  GetVehicleAlertTelemetryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: HttpApi
+      RouteKey: GET /vehicle-telemetry/alerts/{vehicleId}
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
+      Target:
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehicleAlertTelemetryIntegration
+  GetVehicleAlertTelemetryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: GetVehicleAlertTelemetry
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/GET/vehicle-telemetry/alerts/{vehicleId}
+  ApiDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+    - GetVehiclesLiveTelemetryRoute
+    - GetVehicleTelemetryHistoryRoute
+    - GetVehiclesAlertTelemetryRoute
+    - GetVehicleAlertTelemetryRoute
+    Properties:
+      ApiId:
+        Ref: HttpApi
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: dev
+      ApiId:
+        Ref: HttpApi
+      DeploymentId:
+        Ref: ApiDeployment
+  
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UsernameConfiguration: 
+        CaseSensitive: false
+      AutoVerifiedAttributes:
+        - email
+      UserPoolName: !Sub ${CognitoDomain}-user-pool
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - https://www.example.com/callback
+      LogoutURLs:
+        - https://www.example.com/signout
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomain
+      UserPoolId: !Ref UserPool
+  
+  CognitoAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref HttpApi
+      AuthorizerType: JWT
+      IdentitySource:
+          - "$request.header.Authorization"
+      Name: CognitoAuthorizer
+      JwtConfiguration:
+        Audience:
+          - !Ref UserPoolClient
+        Issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
