@@ -37,33 +37,56 @@ var mqttClient = mqttFactory.CreateMqttClient();
 
 var connection = await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
 
-while (true)
+for (int i = 0; i < 10; i++)
 {
-    var vehicleTelemetryData = new VehicleTelemetryData()
+    for (int j = 1; j <= 5; j++)
     {
-        VehicleId = iotSettings.VehicleId,
-        TimeStamp = DateTime.UtcNow,
-        Speed = 100,
-        CargoTemperature = 50,
-        EngineTemperature = 50,
-        FuelLevel = 90,
-        IgnitionStatus = true,
-        Location = new Nest.GeoCoordinate(10, 10)
-    };
+        var vehicleTelemetryData = default(VehicleTelemetryData);
+        if (j >= 4)
+        {
+            vehicleTelemetryData = new VehicleTelemetryData()
+            {
+                VehicleId = j,
+                TimeStamp = DateTime.UtcNow,
+                Speed = 100,
+                CargoTemperature = 50,
+                EngineTemperature = 50,
+                FuelLevel = 90,
+                IgnitionStatus = true,
+                Location = new Nest.GeoCoordinate(10, 10)
+            };
+        }
+        else
+        {
+            vehicleTelemetryData = new VehicleTelemetryData()
+            {
+                VehicleId = j,
+                TimeStamp = DateTime.UtcNow,
+                Speed = 60,
+                CargoTemperature = 50,
+                EngineTemperature = 50,
+                FuelLevel = 90,
+                IgnitionStatus = true,
+                Location = new Nest.GeoCoordinate(10, 10)
+            };
+        }
 
-    var message = new MqttApplicationMessageBuilder()
-        .WithTopic($"{iotSettings.Topic}/{iotSettings.VehicleId}")
-        .WithPayload(JsonSerializer.Serialize(vehicleTelemetryData))
-        .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
-        .Build();
+        var serializedVehicle = JsonSerializer.Serialize(vehicleTelemetryData);
+        var message = new MqttApplicationMessageBuilder()
+            .WithTopic($"{iotSettings.Topic}/{iotSettings.VehicleId}")
+            .WithPayload(serializedVehicle)
+            .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+            .Build();
 
-    var result = await mqttClient.PublishAsync(message, CancellationToken.None);
+        Console.WriteLine($"Publishing data for vehicle id {j} with data {serializedVehicle}");
+
+        var result = await mqttClient.PublishAsync(message, CancellationToken.None);
+
+        Console.WriteLine($"Vehicle id {j} success status: {result.IsSuccess}");
+    }
 
     await Task.Delay(10000);
 }
-
-// fix this!
-Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
 
 await mqttClient.DisconnectAsync();
