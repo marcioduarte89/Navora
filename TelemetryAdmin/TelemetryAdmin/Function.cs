@@ -71,7 +71,8 @@ public class Function
             telemetryData.AddRange(await queryResults.GetNextSetAsync());
 
         }
-         return telemetryData;
+        
+        return telemetryData;
     }
 
     private async Task<IEnumerable<T>> Scan<T>()
