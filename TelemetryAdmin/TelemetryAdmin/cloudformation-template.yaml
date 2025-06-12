@@ -5,6 +5,12 @@ Parameters:
   ImageUri:
     Description: URI of the ECR image for the Lambda function
     Type: String
+  CognitoDomain:
+    Type: String
+    MinLength: 3
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$
+    Description: Enter a string. Must be alpha numeric 3-63 in length.
 Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -75,11 +81,12 @@ Resources:
       ApiId:
         Ref: HttpApi
       RouteKey: GET /vehicle-telemetry/live
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
       Target:
-        Fn::Join:
-        - /
-        - - integrations
-          - Ref: GetVehiclesLiveTelemetryIntegration
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehiclesLiveTelemetryIntegration
   GetVehiclesLiveTelemetryInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -122,11 +129,12 @@ Resources:
       ApiId:
         Ref: HttpApi
       RouteKey: GET /vehicle-telemetry/{vehicleId}/history
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
       Target:
-        Fn::Join:
-        - /
-        - - integrations
-          - Ref: GetVehicleTelemetryHistoryIntegration
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehicleTelemetryHistoryIntegration
   GetVehicleTelemetryHistoryInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -169,11 +177,12 @@ Resources:
       ApiId:
         Ref: HttpApi
       RouteKey: GET /vehicle-telemetry/alerts
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
       Target:
-        Fn::Join:
-        - /
-        - - integrations
-          - Ref: GetVehiclesAlertTelemetryIntegration
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehiclesAlertTelemetryIntegration
   GetVehiclesAlertTelemetryInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -216,11 +225,12 @@ Resources:
       ApiId:
         Ref: HttpApi
       RouteKey: GET /vehicle-telemetry/alerts/{vehicleId}
+      AuthorizationType: JWT
+      AuthorizerId: !Ref CognitoAuthorizer
       Target:
-        Fn::Join:
-        - /
-        - - integrations
-          - Ref: GetVehicleAlertTelemetryIntegration
+        Fn::Sub:
+          - integrations/${integrationId}
+          - integrationId: !Ref GetVehicleAlertTelemetryIntegration
   GetVehicleAlertTelemetryInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -248,3 +258,60 @@ Resources:
         Ref: HttpApi
       DeploymentId:
         Ref: ApiDeployment
+  
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UsernameConfiguration: 
+        CaseSensitive: false
+      AutoVerifiedAttributes:
+        - email
+      UserPoolName: !Sub ${CognitoDomain}-user-pool
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - https://www.example.com/callback
+      LogoutURLs:
+        - https://www.example.com/signout
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      SupportedIdentityProviders:
+        - COGNITO
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomain
+      UserPoolId: !Ref UserPool
+  
+  CognitoAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref HttpApi
+      AuthorizerType: JWT
+      IdentitySource:
+          - "$request.header.Authorization"
+      Name: CognitoAuthorizer
+      JwtConfiguration:
+        Audience:
+          - !Ref UserPoolClient
+        Issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
