@@ -58,8 +58,7 @@ public class Function
     [HttpApi(LambdaHttpMethod.Get, "/vehicle-telemetry/alerts/{vehicleId}")]
     public async Task<List<VehicleTelemetryAlertsData>> GetVehicleAlertTelemetry(long vehicleId)
     {
-        var vehicleTelemetryData = await Query<VehicleTelemetryAlertsData>(vehicleId);
-        return vehicleTelemetryData;
+        return await Query<VehicleTelemetryAlertsData>(vehicleId);
     }
 
     private async Task<List<T>> Query<T>(long vehicleId)
