@@ -36,12 +36,12 @@ Resources:
     Properties:
       RuleName: TelemetryToSQS
       TopicRulePayload:
-        sql: "SELECT * FROM 'vehicle/telemetry/#'"
-        actions:
-          - sqs:
-              roleArn: !GetAtt IoTToSQSRole.Arn
-              queueUrl: !Ref TelemetryQueueUrl
-        ruleDisabled: false
+        Sql: "SELECT * FROM 'vehicle/telemetry/#'"
+        Actions:
+          - Sqs:
+              RoleArn: !GetAtt IoTToSQSRole.Arn
+              QueueUrl: !Ref TelemetryQueueUrl
+        RuleDisabled: false
 
   VehicleThing:
     Type: AWS::IoT::Thing
