@@ -32,10 +32,7 @@ public class Functions
     }
 
     [LambdaFunction]
-    public async Task FunctionHandler(
-        [FromServices] IAmazonDynamoDB dynamoDbClient,
-        SQSEvent evnt,
-        ILambdaContext context)
+    public async Task<SQSBatchResponse> FunctionHandler([FromServices] IAmazonDynamoDB dynamoDbClient, SQSEvent evnt, ILambdaContext context)
     {
         List<BatchItemFailure> batchItemFailures = [];
 
@@ -45,18 +42,19 @@ public class Functions
             {
                 await ProcessMessageAsync(dynamoDbClient, message, context);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                // TODO: handle the exception appropriately!
+
                 //Add failed message identifier to the batchItemFailures list
                 batchItemFailures.Add(new BatchItemFailure { ItemIdentifier = message.MessageId });
             }
         }
+
+        return new SQSBatchResponse(batchItemFailures);
     }
 
-    private async Task ProcessMessageAsync(
-        IAmazonDynamoDB dynamoDbClient,
-        SQSEvent.SQSMessage message,
-        ILambdaContext context)
+    private async Task ProcessMessageAsync(IAmazonDynamoDB dynamoDbClient, SQSEvent.SQSMessage message, ILambdaContext context)
     {
         var payload = JsonSerializer.Deserialize<VehicleTelemetryData>(message.Body, OPTIONS);
 
@@ -82,16 +80,17 @@ public class Functions
 
         var response = await dynamoDbClient.PutItemAsync(request);
 
+        // If the item was inserted in DynamoDB and has an Alert, then publish the message to the alert topic
         if (response.HttpStatusCode == HttpStatusCode.OK && payload.HasAlert())
         {
+            // Gets the AlertsTopic Arn
             var topicArn = await _topicsService.GetTopicArnByName("AlertsTopic");
-
-            Console.WriteLine($"Topic: {topicArn}");
 
             if (topicArn is null)
             {
-                // handle it here (move message to error queue, etc)
-                Console.WriteLine("returning as no topic has been found");
+                // TODO: handle unexpected flow here (move message to error queue for example)
+                // TODO: Log the error
+                Console.WriteLine("No topic has been found");
                 return;
             }
 
@@ -101,8 +100,8 @@ public class Functions
                 Message = message.Body,
             };
 
+            // TODO: Handle the result of the publish
             var snsResponse = await _snsService.PublishAsync(publishRequest);
-
             Console.WriteLine($"Successfully published message ID: {snsResponse.MessageId}");
         }
     }
